@@ -8,7 +8,7 @@ import gurobi.GRB.StringAttr;
 public class Main {
 
 	private static int m, n, mat[][], r_i[], s_j[], k, alfa_j[], h, x, y;
-	private static double c;
+	private static double c, valObj;
 	
 	public static void main(String[] args) throws Exception{
 		readFile();
@@ -22,15 +22,39 @@ public class Main {
 		aggiungiVincoliDomanda(model, xij, r_i);
 		
 		risolvi(model);
+		//Stampa valore della funzione obbiettivo
+		System.out.println(model.get(GRB.DoubleAttr.ObjVal));
+		stampaSoluzione(model);
 	}
 	
+	/*
+	 * Metodo per stampare i risultati del problema
+	 */
+	private static void stampaSoluzione(GRBModel model) throws GRBException {
+		System.out.println("GRUPPO 11");
+		System.out.println("Componenti: ");
+		
+		System.out.println("\nQUESITO I:");
+		System.out.println("funzione obbiettivo = " + model.get(GRB.DoubleAttr.ObjVal));
+		for(GRBVar var : model.getVars()) {
+			System.out.println(var.get(StringAttr.VarName)+ ": "+ var.get(DoubleAttr.X));
+		}
+		//Degenere e multipla?
+		System.out.println("");
+		System.out.println();
+		
+		System.out.println("\nQUESITO II:");
+		
+	}
+
 	//Aggiunta variabili
 	private static GRBVar[][] aggiungiVariabili(GRBModel model, int[] magazzino, int[] domanda) throws GRBException {
 		GRBVar[][] xij = new GRBVar[magazzino.length][domanda.length];
 		
 		for(int i = 0; i < magazzino.length; i++) {
 			for(int j = 0; j < domanda.length; j++) {
-				xij[i][j] = model.addVar(0, GRB.INFINITY, 0, GRB.CONTINUOUS, "xij_" + i + "_" + j);
+				//Cambiato il tipo di variabile in intero (quantità sempre intere)
+				xij[i][j] = model.addVar(0, GRB.INFINITY, 0, GRB.INTEGER, "xij_" + i + "_" + j);
 			}
 		}
 		return xij;
@@ -42,7 +66,8 @@ public class Main {
 		
 		for(int i = 0; i < distanze.length; i++) {
 			for(int j = 0; j < distanze[0].length; j++) {
-				obj.addTerm(distanze[i][j], xij[i][j]);
+				//Aggiunto il costo ad ogni elemento della funzione obbiettivo
+				obj.addTerm((distanze[i][j]*c), xij[i][j]);
 			}
 		}
 		model.setObjective(obj);
@@ -84,9 +109,9 @@ public class Main {
 		// 5 soluzione illimitata
 		// 9 tempo limite raggiunto
 		
-		for(GRBVar var : model.getVars()) {
+		/*for(GRBVar var : model.getVars()) {
 			System.out.println(var.get(StringAttr.VarName)+ ": "+ var.get(DoubleAttr.X));
-		}
+		}*/
 	}
 	
 	/**
