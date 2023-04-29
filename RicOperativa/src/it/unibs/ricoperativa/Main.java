@@ -4,7 +4,8 @@ import java.io.*;
 
 public class Main {
 
-	private static int m, n, mat[][], r_i[], s_j[], c, k, alfa_j, h, x, y;
+	private static int m, n, mat[][], r_i[], s_j[], k, alfa_j[], h, x, y;
+	private static double c;
 	
 	public static void main(String[] args) throws IOException{
 		
@@ -48,27 +49,63 @@ public class Main {
 					}
 				}
 				break;
+			//Lettura richieste dei clienti	
 			case "r_i":
 				r_i = new int[n];
 				System.out.println();
+				st = reader.readLine();
+				stArray = st.split(" ");
 				for(int i = 0; i < n; i++) {
-					st = reader.readLine();
-					stArray = st.split(" ");
 					r_i[i] = Integer.parseInt(stArray[i]);
-					System.out.println(r_i[i]);
+					System.out.print(r_i[i]);
 				}
 				break;
+			//Lettura della capacità dei magazzini 	
 			case "s_j":
 				s_j = new int[m];
-				for(int i = 0; i < m; i++) {
-					st = reader.readLine();
-					stArray = st.split(" ");
+				System.out.println();
+				st = reader.readLine();
+				stArray = st.split(" ");
+				for(int i = 0; i < m; i++) {	
 					s_j[i] = Integer.parseInt(stArray[i]);
-					System.out.println(s_j[i]);
+					System.out.print(s_j[i]);
 				}
+				break;		
+			//Lettura costo in euro per trasportare 1kg di merce per 1km
+			case "c":
+				c = Double.parseDouble(stArray[1]);
+				System.out.println("\n" + c);
 				break;
-
-			}
+			//Lettura raggio massima distanza
+			case "k": 
+				k = Integer.parseInt(stArray[1]);
+				System.out.print(k);
+				break;
+			//Lettura dei dati relativi alla chiusura di un magazzino
+			case "alfa_j":
+				alfa_j = new int[m];
+				System.out.println();
+				st = reader.readLine();
+				stArray = st.split(" ");
+				for(int i = 0; i < m; i++) {	
+					alfa_j[i] = Integer.parseInt(stArray[i]);
+					System.out.print(alfa_j[i]);
+				}
+				break;	
+			//Lettura pedice del parametro s
+			case "h":
+				h = Integer.parseInt(stArray[1]);
+				System.out.println(h);
+				break;
+			//Lettura pedici del parametro d
+			case "x":
+				x = Integer.parseInt(stArray[2]);
+				y = Integer.parseInt(stArray[3]);
+				System.out.println(x);
+				System.out.println(y);
+				break;
+		
+			}	
 			//Lettura della linea successiva
 			st = reader.readLine();
 		}
