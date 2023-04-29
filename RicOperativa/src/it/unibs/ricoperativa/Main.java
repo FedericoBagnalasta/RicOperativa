@@ -1,6 +1,7 @@
 package it.unibs.ricoperativa;
 
 import java.io.*;
+import gurobi.*;
 
 public class Main {
 
@@ -10,7 +11,29 @@ public class Main {
 	public static void main(String[] args) throws IOException{
 		
 		readFile();
-
+		try {
+		//Instanza dell'ambiente di esecuzione del solver
+		GRBEnv env = new GRBEnv("FileDiLog.log");
+		impostaParametri(env);
+		
+		GRBModel model = new GRBModel(env);
+		} catch (GRBException e) 
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Metodo per impostare i parametri del problema
+	 * @param env
+	 * @throws GRBException
+	 */
+	private static void impostaParametri(GRBEnv env) throws GRBException 
+	{
+		//Metodo del simplesso duale
+		env.set(GRB.IntParam.Method, 0);
+		env.set(GRB.IntParam.Presolve, 0);
+		env.set(GRB.DoubleParam.TimeLimit, 600);
 	}
 	
 	/*
