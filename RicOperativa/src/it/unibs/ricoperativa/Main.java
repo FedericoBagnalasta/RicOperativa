@@ -16,6 +16,7 @@ public class Main {
 		GRBEnv env = new GRBEnv("FileDiLog.log");
 		impostaParametri(env);
 		
+		
 		GRBModel model = new GRBModel(env);
 		} catch (GRBException e) 
 		{
