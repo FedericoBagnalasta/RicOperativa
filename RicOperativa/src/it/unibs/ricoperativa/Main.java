@@ -12,6 +12,7 @@ public class Main {
 	
 	public static void main(String[] args) throws Exception{
 		readFile();
+
 		
 		GRBEnv env = new GRBEnv();
 		GRBModel model = new GRBModel(env);
@@ -88,6 +89,20 @@ public class Main {
 		}
 	}
 	
+	/**
+	 * Metodo per impostare i parametri del problema
+	 * @param env
+	 * @throws GRBException
+	 */
+	private static void impostaParametri(GRBEnv env) throws GRBException 
+	{
+		//Metodo del simplesso duale
+		env.set(GRB.IntParam.Method, 0);
+		env.set(GRB.IntParam.Presolve, 0);
+		env.set(GRB.DoubleParam.TimeLimit, 600);
+
+	}
+	
 	/*
 	 * Metodo per la lettura del file che contiene i dati del problema
 	 */
@@ -126,6 +141,7 @@ public class Main {
 							System.out.print(mat[i][l]);
 						}
 					}
+
 					break;
 					
 				//Lettura richieste dei clienti	
