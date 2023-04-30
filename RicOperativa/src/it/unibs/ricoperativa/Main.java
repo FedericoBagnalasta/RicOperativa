@@ -7,7 +7,7 @@ import gurobi.GRB.StringAttr;
 
 public class Main {
 
-	private static int m, n, mat[][], r_i[], s_j[], k, alfa_j[], h, x, y;
+	private static int m, n, mat[][], r_i[], s_j[], k, alfa_j[], h, x, y, variabiliBase;
 	private static double c, valObj;
 	
 	public static void main(String[] args) throws Exception{
@@ -32,9 +32,60 @@ public class Main {
 	 */
 	private static void stampaSoluzione(GRBModel model) throws GRBException {
 		System.out.println("GRUPPO 11");
-		System.out.println("Componenti: ");
+		System.out.println("Componenti: Bagnalasta Federico, Kovaci Matteo");
 		
 		System.out.println("\nQUESITO I:");
+		System.out.println("funzione obbiettivo = " + model.get(GRB.DoubleAttr.ObjVal));
+		
+		int variabiliNonAzzerate = 0;
+		int ccrAzzerati = 0;
+		for(GRBVar var : model.getVars()) {
+			System.out.println(var.get(StringAttr.VarName) + ": "+ var.get(DoubleAttr.X));
+			
+			if((var.get(DoubleAttr.X) != 0)) {
+				variabiliNonAzzerate++;
+			}
+			
+			if((var.get(DoubleAttr.RC)) == 0) {
+				ccrAzzerati++;
+			}
+		}
+	//==========================================================================
+		
+		//PROVE
+		//DA CANCELLARE
+		
+		for(GRBVar var : model.getVars()) {
+			
+			//if(var.get(DoubleAttr.RC) == 0)
+			System.out.println(var.get(StringAttr.VarName) + ": "+ var.get(DoubleAttr.RC));
+		}
+		System.out.println(variabiliNonAzzerate);
+		System.out.println(ccrAzzerati);    //DOVREBBERO ESSERE ALMENO 86
+		
+		//==========================================================================
+		variabiliBase = m + n;
+		if(variabiliNonAzzerate == variabiliBase) {
+			System.out.println("Degenere: no");
+		}
+		//Soluzione degenere se ci sono delle variabili in base con valore nullo
+		else {
+			System.out.println("Degenere: sì");
+		}
+		if(ccrAzzerati == variabiliBase) {
+			System.out.println("Multipla: no");
+		}
+		//Soluzione multipla se almeno una soluzione fuori base ha ccr nullo
+		else {
+			System.out.println("Multipla: sì");
+		}
+		
+		
+		
+		
+		System.out.println("\nQUESITO II:");
+	
+		/*
 		System.out.println("funzione obbiettivo = " + model.get(GRB.DoubleAttr.ObjVal));
 		for(GRBVar var : model.getVars()) {
 			System.out.println(var.get(StringAttr.VarName)+ ": "+ var.get(DoubleAttr.X));
@@ -44,6 +95,7 @@ public class Main {
 		System.out.println();
 		
 		System.out.println("\nQUESITO II:");
+		*/
 		
 	}
 
@@ -53,8 +105,7 @@ public class Main {
 		
 		for(int i = 0; i < magazzino.length; i++) {
 			for(int j = 0; j < domanda.length; j++) {
-				//Cambiato il tipo di variabile in intero (quantità sempre intere)
-				xij[i][j] = model.addVar(0, GRB.INFINITY, 0, GRB.INTEGER, "xij_" + i + "_" + j);
+				xij[i][j] = model.addVar(0, GRB.INFINITY, 0, GRB.CONTINUOUS, "xij_" + i + "_" + j);
 			}
 		}
 		return xij;
@@ -66,8 +117,8 @@ public class Main {
 		
 		for(int i = 0; i < distanze.length; i++) {
 			for(int j = 0; j < distanze[0].length; j++) {
-				//Aggiunto il costo ad ogni elemento della funzione obbiettivo
-				obj.addTerm((distanze[i][j]*c), xij[i][j]);
+				//MOLTIPLICARE LA DISTANZA PER IL COSTO UNA VOLTA SISTEMATE LE CIFRE DECIMALI ALTRIMENTI VA TUTTO A 0
+				obj.addTerm((distanze[i][j]), xij[i][j]);
 			}
 		}
 		model.setObjective(obj);
