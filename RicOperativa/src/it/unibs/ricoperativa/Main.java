@@ -1,6 +1,8 @@
 package it.unibs.ricoperativa;
 
 import java.io.*;
+import java.util.ArrayList;
+
 import gurobi.*;
 import gurobi.GRB.DoubleAttr;
 import gurobi.GRB.StringAttr;
@@ -97,6 +99,19 @@ public class Main {
 		System.out.println("\nQUESITO II:");
 		*/
 		
+		
+		//Un vincolo è inattivo se l'attributo Slack è > 0
+		System.out.print("lista vincoli non attivi= ");
+		GRBConstr[] constrains = model.getConstrs();
+		for(int i = 0; i < constrains.length; i++) {
+			double slack = constrains[i].get(GRB.DoubleAttr.Slack);
+			if(slack > 0.0) {
+				System.out.println(constrains[i].get(GRB.StringAttr.ConstrName));
+			}
+		}
+		
+		
+	
 	}
 
 	//Aggiunta variabili
