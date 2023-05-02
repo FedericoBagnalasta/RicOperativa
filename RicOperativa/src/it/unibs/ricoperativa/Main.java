@@ -2,8 +2,6 @@ package it.unibs.ricoperativa;
 
 import java.io.*;
 import gurobi.*;
-import gurobi.GRB.DoubleAttr;
-import gurobi.GRB.StringAttr;
 
 public class Main {
 
@@ -35,7 +33,7 @@ public class Main {
 		System.out.println("Componenti: Bagnalasta Federico, Kovacic Matteo");
 		
 		System.out.println("\nQUESITO I:");
-		System.out.println("funzione obbiettivo = " + model.get(GRB.DoubleAttr.ObjVal));
+		System.out.printf("funzione obbiettivo = %.4f\n" + model.get(GRB.DoubleAttr.ObjVal));
 		/*
 		for(GRBVar var : model.getVars()) {
 			System.out.println(var.get(StringAttr.VarName) + ": "+ var.get(DoubleAttr.X));
@@ -103,9 +101,29 @@ public class Main {
 		*/
 		
 		trovaVincoliInattivi(model);
+		trovaRilassamento(model);
+		solDuale(model);
 	
 	}
 	
+	/*
+	 * Metodo per trovare la soluzione del problema duale 
+	 */
+	private static void solDuale(GRBModel model) throws Exception {
+		GRBModel modelDuale =  model.dualize();
+	}
+	
+	/*
+	 * Metodo per trovare il rilassamento
+	 */
+	private static void trovaRilassamento(GRBModel model) throws Exception {
+		GRBModel rilassamento = model.relax();
+		rilassamento.optimize();
+	}
+	
+	/*
+	 * Metodo per verificare se la soluzione è degenere
+	 */
 	private static void controllaDegenere(GRBModel model) throws Exception {
 		if (model.get(GRB.IntAttr.SolCount) > 0) {
             double[] solution = model.get(GRB.DoubleAttr.X, model.getVars());
@@ -130,6 +148,9 @@ public class Main {
         }
 	}
 	
+	/*
+	 * Metodo per verificare se la soluzione è multipla
+	 */
 	private static void controllaMultipla(GRBModel model) throws Exception {
 		if(model.get(GRB.IntAttr.SolCount) > 1)
 			System.out.println("Multipla: sì");
@@ -143,17 +164,19 @@ public class Main {
 	 */
 	private static void trovaVincoliInattivi(GRBModel model) throws GRBException {
 		//Un vincolo è inattivo se l'attributo Slack è > 0
-		System.out.print("lista vincoli non attivi= ");
+		System.out.print("lista vincoli non attivi = ");
 		GRBConstr[] constrains = model.getConstrs();
 		for(int i = 0; i < constrains.length; i++) {
 			double slack = constrains[i].get(GRB.DoubleAttr.Slack);
 			if(slack > 0.0) {
-				System.out.println(constrains[i].get(GRB.StringAttr.ConstrName));
+				System.out.printf("  " + constrains[i].get(GRB.StringAttr.ConstrName));
 			}
 		}
 	}
 
-	//Aggiunta variabili
+	/*
+	 * Metodo per l'aggiunta di variabili
+	 */
 	private static GRBVar[][] aggiungiVariabili(GRBModel model, int[] magazzino, int[] domanda) throws GRBException {
 		GRBVar[][] xij = new GRBVar[magazzino.length][domanda.length];
 		
@@ -169,7 +192,9 @@ public class Main {
 		return xij;
 	}
 	
-	//Aggaiunta funzione obiettivo
+	/*
+	 * Metodo per l'aggiunta della funzione obiettivo
+	 */
 	private static void aggiungiFunzioneObiettivo(GRBModel model, GRBVar[][] xij, int[][] distanze) throws GRBException {
 		GRBLinExpr obj = new GRBLinExpr();
 		
@@ -183,7 +208,9 @@ public class Main {
 		model.set(GRB.IntAttr.ModelSense, GRB.MINIMIZE);
 	}
 	
-	//Aggiunta vincoli di magazzino
+	/*
+	 * Metodo per l'aggiunta dei vincoli di magazzino
+	 */
 	private static void aggiungiVincoliMagazzino(GRBModel model, GRBVar[][] xij, int[] magazzino) throws GRBException {
 		for(int i = 0; i < magazzino.length; i++) {
 			GRBLinExpr expr = new GRBLinExpr();
@@ -195,7 +222,9 @@ public class Main {
 		}
 	}
 	
-	//Aggiunta vincoli di domanda
+	/*
+	 * Metodo per l'aggiunta dei vincoli di domanda
+	 */
 	private static void aggiungiVincoliDomanda(GRBModel model, GRBVar[][] xij, int[] domanda) throws GRBException {
 		for(int j = 0; j < domanda.length; j++) {
 			GRBLinExpr expr = new GRBLinExpr();
@@ -207,6 +236,9 @@ public class Main {
 		}
 	}
 	
+	/*
+	 * Metodo per risolvere il problema
+	 */
 	private static void risolvi(GRBModel model) throws GRBException {
 		model.optimize();
 		
