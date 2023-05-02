@@ -1,15 +1,13 @@
 package it.unibs.ricoperativa;
 
 import java.io.*;
-import java.util.ArrayList;
-
 import gurobi.*;
 import gurobi.GRB.DoubleAttr;
 import gurobi.GRB.StringAttr;
 
 public class Main {
 
-	private static int m, n, mat[][], r_i[], s_j[], k, alfa_j[], h, x, y, variabiliBase;
+	private static int m, n, mat[][], r_i[], s_j[], k, alfa_j[], h, x, y;
 	private static double c, valObj;
 	
 	public static void main(String[] args) throws Exception{
@@ -32,17 +30,19 @@ public class Main {
 	/*
 	 * Metodo per stampare i risultati del problema
 	 */
-	private static void stampaSoluzione(GRBModel model) throws GRBException {
+	private static void stampaSoluzione(GRBModel model) throws Exception {
 		System.out.println("GRUPPO 11");
-		System.out.println("Componenti: Bagnalasta Federico, Kovaci Matteo");
+		System.out.println("Componenti: Bagnalasta Federico, Kovacic Matteo");
 		
 		System.out.println("\nQUESITO I:");
 		System.out.println("funzione obbiettivo = " + model.get(GRB.DoubleAttr.ObjVal));
-		
-		int variabiliNonAzzerate = 0;
-		int ccrAzzerati = 0;
+		/*
 		for(GRBVar var : model.getVars()) {
 			System.out.println(var.get(StringAttr.VarName) + ": "+ var.get(DoubleAttr.X));
+		/*
+		int variabiliNonAzzerate = 0;
+		int ccrAzzerati = 0;
+		
 			
 			if((var.get(DoubleAttr.X) != 0)) {
 				variabiliNonAzzerate++;
@@ -82,7 +82,10 @@ public class Main {
 			System.out.println("Multipla: sì");
 		}
 		
+		*/
 		
+		controllaDegenere(model);
+		controllaMultipla(model);
 		
 		
 		System.out.println("\nQUESITO II:");
@@ -99,7 +102,46 @@ public class Main {
 		System.out.println("\nQUESITO II:");
 		*/
 		
-		
+		trovaVincoliInattivi(model);
+	
+	}
+	
+	private static void controllaDegenere(GRBModel model) throws Exception {
+		if (model.get(GRB.IntAttr.SolCount) > 0) {
+            double[] solution = model.get(GRB.DoubleAttr.X, model.getVars());
+
+            //Verifica se esistono variabili di base con valore 0
+            boolean isDegenerate = false;
+            for (GRBVar var : model.getVars()) {
+                if (var.get(GRB.IntAttr.VBasis) == GRB.BASIC && solution[var.get(GRB.IntAttr.VBasis)] == 0.0) {
+                    isDegenerate = true;
+                    break;
+                }
+            }
+            if (isDegenerate) {
+            	 System.out.println("Degenere: sì");
+            }
+            else {
+            	System.out.println("Degenere: no");
+            }
+            
+        } else {
+            System.out.println("Il problema non ha soluzione");
+        }
+	}
+	
+	private static void controllaMultipla(GRBModel model) throws Exception {
+		if(model.get(GRB.IntAttr.SolCount) > 1)
+			System.out.println("Multipla: sì");
+		else
+			System.out.println("Multipla: no");
+	}
+	
+	
+	/*
+	 * Metodo per individuare i vincoli inattivi
+	 */
+	private static void trovaVincoliInattivi(GRBModel model) throws GRBException {
 		//Un vincolo è inattivo se l'attributo Slack è > 0
 		System.out.print("lista vincoli non attivi= ");
 		GRBConstr[] constrains = model.getConstrs();
@@ -109,9 +151,6 @@ public class Main {
 				System.out.println(constrains[i].get(GRB.StringAttr.ConstrName));
 			}
 		}
-		
-		
-	
 	}
 
 	//Aggiunta variabili
@@ -120,7 +159,11 @@ public class Main {
 		
 		for(int i = 0; i < magazzino.length; i++) {
 			for(int j = 0; j < domanda.length; j++) {
-				xij[i][j] = model.addVar(0, GRB.INFINITY, 0, GRB.CONTINUOUS, "xij_" + i + "_" + j);
+				double upperBound = GRB.INFINITY;
+				if(mat[i][j] > k) {
+					upperBound = 0;
+				}
+				xij[i][j] = model.addVar(0, upperBound, 0, GRB.CONTINUOUS, "xij_" + i + "_" + j);
 			}
 		}
 		return xij;
