@@ -2,6 +2,7 @@ package it.unibs.ricoperativa;
 
 import java.io.*;
 import gurobi.*;
+import gurobi.GRB.*;
 
 public class Main {
 
@@ -22,21 +23,23 @@ public class Main {
 		risolvi(model);
 		//Stampa valore della funzione obbiettivo
 		System.out.println(model.get(GRB.DoubleAttr.ObjVal));
-		stampaSoluzione(model);
+		stampaSoluzione(model, xij);
+
 	}
 	
 	/*
 	 * Metodo per stampare i risultati del problema
 	 */
-	private static void stampaSoluzione(GRBModel model) throws Exception {
+	private static void stampaSoluzione(GRBModel model, GRBVar[][] xij) throws Exception {
 		System.out.println("GRUPPO 11");
 		System.out.println("Componenti: Bagnalasta Federico, Kovacic Matteo");
 		
 		System.out.println("\nQUESITO I:");
-		System.out.printf("funzione obbiettivo = %.4f\n" + model.get(GRB.DoubleAttr.ObjVal));
+		//System.out.printf("funzione obbiettivo = %.4f\n" + model.get(GRB.DoubleAttr.ObjVal));                 //DA CORREGGERE %.4f 
 		/*
 		for(GRBVar var : model.getVars()) {
-			System.out.println(var.get(StringAttr.VarName) + ": "+ var.get(DoubleAttr.X));
+			System.out.println(var.get(StringAttr.VarName) + ": "+ var.get(DoubleAttr.X));                      //DA TENERE
+		}
 		/*
 		int variabiliNonAzzerate = 0;
 		int ccrAzzerati = 0;
@@ -88,36 +91,81 @@ public class Main {
 		
 		System.out.println("\nQUESITO II:");
 	
-		/*
-		System.out.println("funzione obbiettivo = " + model.get(GRB.DoubleAttr.ObjVal));
-		for(GRBVar var : model.getVars()) {
-			System.out.println(var.get(StringAttr.VarName)+ ": "+ var.get(DoubleAttr.X));
-		}
-		//Degenere e multipla?
-		System.out.println("");
-		System.out.println();
-		
-		System.out.println("\nQUESITO II:");
-		*/
 		
 		trovaVincoliInattivi(model);
-		trovaRilassamento(model);
+		
 		solDuale(model);
+		
+		trovaIntervalloK(model, xij);
+		//Forse bisogna aggiornare xij, con aggiungiVariabili
+		
+		
+		
+		//trovaRilassamento(model);
+	}
 	
+	/*
+	 * Metodo per torvare l'intervallo del parametro k, nel quale il problema non ha soluzione
+	 */
+	/*
+	 * Dopo la risoluzione del modello, viene verificato lo stato di fattibilità del problema. 
+	 * Se il problema è infattibile, viene impostato un intervallo iniziale [0, raggioMax] 
+	 * e viene utilizzato il metodo della bisezione per ridurre l'intervallo fino a che non si individua il valore massimo di raggio per cui il problema è ancora infattibile. 
+	 * Questa operazione viene eseguita all'interno del ciclo while. 
+	 *Nel ciclo, viene calcolato il valore del raggio medio e viene impostato un vincolo quadratico per ogni coppia di nodi (i,j) che limita la distanza tra i nodi a essere minore o uguale al quadrato del raggio medio. 
+	 *Viene poi risolto il modello e se il problema rimane infattibile, il valore massimo del raggio viene impostato a raggio medio. 
+	 *Altrimenti, il valore minimo del raggio viene impostato a raggio medio. 
+	 *Infine, quando l'intervallo viene sufficientemente ridotto, viene stampato il valore massimo del raggio per cui il problema diventa infattibile. 
+	 *Se invece il problema era già fattibile, viene stampato il messaggio "Il problema ammette soluzione per ogni valore di raggio <= raggioMax".
+	 */
+	private static void trovaIntervalloK(GRBModel model, GRBVar[][] xij) throws GRBException {
+		double raggioMin = 0.0, raggioMax = k;
+		 if (model.get(GRB.IntAttr.Status) == GRB.Status.OPTIMAL) {
+			 while((raggioMax - raggioMin) > 1) {									//ARRIVA SEMPRE ALLA FINE
+				 double raggio = (raggioMax - raggioMin)/2;
+				 	for(int i = 0; i < m; i++) {
+				 		for(int j = 0; j < n; j++) {																//NON ESISTE UN CONTROLLO SE K E' SEMPRE VALIDO!
+				 			if(mat[i][j] > raggio) {
+				 				xij[i][j].set(GRB.DoubleAttr.UB, 0.0);
+				 				/*GRBVar v = xij.getVars()[0];
+				 						  v.set(GRB.DoubleAttr.UB, 0);
+				 				/*
+				 				GRBVar v = xij[i][j].get(GRB.DoubleAttr.X);
+				 				v.set(GRB.DoubleAttr.UB, 0.0);
+				 				*/
+							}
+				 			// minVar.set(GRB.DoubleAttr.UB, 0.0);
+							
+				 		}
+				 	}
+				 	model.optimize();
+				 	//Se non esiste una soluzione, la variabile min assumerà valore = al raggio 
+				 	 if (model.get(GRB.IntAttr.Status) == GRB.Status.INFEASIBLE) {
+				          raggioMin = raggio;																			//PERCHE' MAX?
+				     } else {
+				          raggioMax = raggio;
+				     }
+			 }
+			 System.out.println(String.format("intervallo k = (%f, %f)", 0.0,  raggioMax));
+		 }
 	}
 	
 	/*
 	 * Metodo per trovare la soluzione del problema duale 
 	 */
 	private static void solDuale(GRBModel model) throws Exception {
-		GRBModel modelDuale =  model.dualize();
+		int i = 0;
+		for(GRBConstr constr : model.getConstrs()){
+		//for(int i = 0; i < model.getConstrs().length; i++)	
+			System.out.printf(String.format("lambda_%s %.4f\t", i++, constr.get(DoubleAttr.Pi)));                       //IL VALORE DOVREBBE ESSERE POSITIVO
+		}
 	}
 	
 	/*
 	 * Metodo per trovare il rilassamento
 	 */
 	private static void trovaRilassamento(GRBModel model) throws Exception {
-		GRBModel rilassamento = model.relax();
+		GRBModel rilassamento = model.relax();                                                                           //STAMPARE IL VALORE
 		rilassamento.optimize();
 	}
 	
@@ -158,7 +206,6 @@ public class Main {
 			System.out.println("Multipla: no");
 	}
 	
-	
 	/*
 	 * Metodo per individuare i vincoli inattivi
 	 */
@@ -172,10 +219,11 @@ public class Main {
 				System.out.printf("  " + constrains[i].get(GRB.StringAttr.ConstrName));
 			}
 		}
+		System.out.println("");
 	}
 
 	/*
-	 * Metodo per l'aggiunta di variabili
+	 * Metodo per l'aggiunta delle variabili
 	 */
 	private static GRBVar[][] aggiungiVariabili(GRBModel model, int[] magazzino, int[] domanda) throws GRBException {
 		GRBVar[][] xij = new GRBVar[magazzino.length][domanda.length];
@@ -201,7 +249,7 @@ public class Main {
 		for(int i = 0; i < distanze.length; i++) {
 			for(int j = 0; j < distanze[0].length; j++) {
 				//MOLTIPLICARE LA DISTANZA PER IL COSTO UNA VOLTA SISTEMATE LE CIFRE DECIMALI ALTRIMENTI VA TUTTO A 0
-				obj.addTerm((distanze[i][j]), xij[i][j]);
+				obj.addTerm(c * (double) (distanze[i][j]), xij[i][j]);
 			}
 		}
 		model.setObjective(obj);
